@@ -10,6 +10,8 @@ There is no contributor license agreement. Each commit carries a `Signed-off-by`
 git commit -s
 ```
 
+A pull request whose commits lack the line fails the check "Signed off".
+
 ## What a change brings
 
 - **A rule of the spec** comes with its cases or vectors in `conformance/`, and a new file of `conformance/lists/` with its case in `cases.json`.
@@ -18,6 +20,10 @@ git commit -s
 
 `npm ci && npm run check` checks the suite against itself and the schema, as CI does on every pull request. It does not check a reader: Koona Pin runs the suite in its own tests, and so can any other reader.
 
+## Releases
+
+A release is a tag: `rYYYY-MM` for a new revision of the reader rules, then `rYYYY-MM.1`, `rYYYY-MM.2` for later fixes of the same revision (wording, a missing case) that change no rule. A tag is never moved or deleted: a tool that pins one, as Koona Pin does by tag and commit, must get the same files from it every time.
+
 ## Koona Pin
 
-Koona Pin keeps a copy of this repository in its `docs/kpin/`, pinned to a tag here, and checks in its CI that the copy is that tag's files and that its reader passes the suite. A change here reaches Koona Pin when its copy moves to the new tag.
+Koona Pin keeps a copy of this repository in its `docs/kpin/`, pinned to a tag and its commit here, and checks in its CI that the copy is that tag's files and that its reader passes the suite. A change here reaches Koona Pin when its copy moves to the new tag.
