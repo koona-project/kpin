@@ -1,15 +1,15 @@
-# kpin
+# @koona/kpin
 
 The reference reader and validator of the [`.kpin` list format](https://github.com/koona-project/kpin/blob/main/README.md) 1.x, reader rules of revision **2026-11**. It reads and checks `.kpin` files without Koona Pin, and passes the whole [conformance suite](https://github.com/koona-project/kpin/blob/main/conformance).
 
-- ESM with TypeScript types, no runtime dependencies.
+- ESM with TypeScript types, no runtime dependencies. Its command is `kpin`.
 - Runs in Node 18 and later, and in browsers.
 - Dedicated to the public domain under CC0 1.0, like the spec ([LICENSE.md](https://github.com/koona-project/kpin/blob/main/LICENSE.md)).
 
 ## Read a list
 
 ```js
-import { read } from "kpin";
+import { read } from "@koona/kpin";
 
 const answer = read(bytes); // a Uint8Array or ArrayBuffer as it came, or a string
 if (answer.answer === "ready") {
@@ -37,7 +37,7 @@ Limits and names are exported as constants: `MAX_BYTES`, `MAX_ITEMS`, `MAX_SECTI
 ## Validate files
 
 ```bash
-npx kpin validate list.kpin other.kpin
+npx @koona/kpin validate list.kpin other.kpin
 ```
 
 ```
@@ -49,9 +49,9 @@ other.kpin: not_a_list: title is missing, not a string or empty once cleaned
 ```
 
 - `--json` prints one JSON document, `{ "revision", "files": [{ "path", "ok", "answer", "list" | "why", ... }] }`.
-- `--schema` also checks each file against [schema-1.json](https://github.com/koona-project/kpin/blob/main/schema-1.json), the schema a writer must satisfy. It needs `ajv` and `ajv-formats` beside `kpin` (`npm install kpin ajv@8 ajv-formats@3`). They are optional peer dependencies, so the reader itself installs nothing.
+- `--schema` also checks each file against [schema-1.json](https://github.com/koona-project/kpin/blob/main/schema-1.json), the schema a writer must satisfy. It needs `ajv` and `ajv-formats` beside `@koona/kpin` (`npm install @koona/kpin ajv@8 ajv-formats@3`). They are optional peer dependencies, so the reader itself installs nothing.
 - `--quiet` prints only the files that fail.
-- `-` in place of a file reads stdin to its end, once per run: `curl -s https://example.org/list.kpin | npx kpin validate -`.
+- `-` in place of a file reads stdin to its end, once per run: `curl -s https://example.org/list.kpin | npx @koona/kpin validate -`.
 
 The exit status is 0 when every file is a ready list (and, with `--schema`, valid to the schema), 1 when any isn't, and 2 for a usage error.
 

@@ -1,5 +1,5 @@
 // The types of the package, checked by `tsc -p test`: what a TypeScript user writes compiles.
-import { read, line, tag, linkUrl, repeatKey, oneClick, type Answer, type List, type Taken } from "kpin";
+import { read, line, tag, linkUrl, repeatKey, oneClick, type Answer, type List, type Taken } from "@koona/kpin";
 
 const answer: Answer = read(new Uint8Array());
 if (answer.answer === "ready") {

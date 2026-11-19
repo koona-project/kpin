@@ -19,7 +19,7 @@ A pull request whose commits lack the line fails the check "Signed off".
 - **A new case or vector** comes with the reference reader in `js/` changed to pass it. A change of what a reader must answer also sets its `REVISION` (`js/src/index.js`) to the new revision; a missing case of the current revision does not.
 - **An invisible character** in a JSON file of the suite, or in the code of `js/`, is written as a `\u` escape, never as itself.
 
-`npm ci && npm run check` checks the suite against itself and the schema, and `npm test` runs the reference reader in `js/` (the package `kpin`) against the whole suite, as CI does on every pull request. Koona Pin runs the suite in its own tests too, and so can any other reader.
+`npm ci && npm run check` checks the suite against itself and the schema, and `npm test` runs the reference reader in `js/` (the package `@koona/kpin`) against the whole suite, as CI does on every pull request. Koona Pin runs the suite in its own tests too, and so can any other reader.
 
 The package takes `schema-1.json` and `LICENSE.md` from the root when it is packed (`js/tools/pack-files.mjs`, run by `prepack` and `postpack`), so there is one copy of each in the repository; `npm run test:pack` packs the package, checks the copies and runs the packed CLI, as CI does.
 
