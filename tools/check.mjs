@@ -1,7 +1,7 @@
 // Checks the conformance suite against itself and the schema: every list has its case and every
 // case its file, the schema answers each case as `schema_valid` says, every example is valid, every
 // suite file names one revision, and no JSON file of the suite holds an invisible character
-// written as itself. It checks no reader: a reader runs the suite in its own tests.
+// written as itself, nor any file of js/. It checks no reader: the reader of js/ runs the suite in npm test.
 //
 //   npm ci && node tools/check.mjs
 import { readFileSync, readdirSync } from "node:fs";
@@ -85,6 +85,18 @@ for (const name of ["cases.json", "text.json", "addresses.json", "same-page.json
   text.split("\n").forEach((line, i) => {
     const found = line.replace(/\r$/, "").match(hidden);
     if (found) problem(`${name}:${i + 1}: U+${found[0].codePointAt(0).toString(16).toUpperCase().padStart(4, "0")} written as itself; write it as an escape`);
+  });
+}
+
+// The reference reader's files too: its code, tests, types and docs.
+const scan = (dir) =>
+  readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((entry) =>
+    entry.name === "node_modules" ? [] : entry.isDirectory() ? scan(`${dir}${entry.name}/`) : [`${dir}${entry.name}`],
+  );
+for (const path of scan("js/").filter((p) => /\.(js|mjs|ts|json|md)$/.test(p))) {
+  read(path).split("\n").forEach((line, i) => {
+    const found = line.replace(/\r$/, "").match(hidden);
+    if (found) problem(`${path}:${i + 1}: U+${found[0].codePointAt(0).toString(16).toUpperCase().padStart(4, "0")} written as itself; write it as an escape`);
   });
 }
 

@@ -16,9 +16,12 @@ A pull request whose commits lack the line fails the check "Signed off".
 
 - **A rule of the spec** comes with its cases or vectors in `conformance/`, and a new file of `conformance/lists/` with its case in `cases.json`.
 - **A change of what a reader must answer** is a change of the reader rules or of the format, and goes in the spec's changelog: under a new revision (`YYYY-MM`, written in every suite file's `revision`) when a reader becomes stricter within a version, or as a new MINOR or MAJOR as the spec's Versions section says.
-- **An invisible character** in a JSON file of the suite is written as a `\u` escape, never as itself.
+- **A new case or vector, or a change of a reader rule,** comes with the reference reader in `js/` changed to pass it, and its `REVISION` with a new revision.
+- **An invisible character** in a JSON file of the suite, or in the code of `js/`, is written as a `\u` escape, never as itself.
 
-`npm ci && npm run check` checks the suite against itself and the schema, as CI does on every pull request. It does not check a reader: Koona Pin runs the suite in its own tests, and so can any other reader.
+`npm ci && npm run check` checks the suite against itself and the schema, and `npm test` runs the reference reader in `js/` (the package `kpin`) against the whole suite, as CI does on every pull request. Koona Pin runs the suite in its own tests too, and so can any other reader.
+
+`js/schema-1.json` and `js/LICENSE.md` are copies of the files at the root, for the package; `npm test` fails when they differ.
 
 ## Releases
 
