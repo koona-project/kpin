@@ -1,5 +1,5 @@
 {
-  "name": "kpin",
+  "name": "@koona/kpin",
   "version": "0.1.0",
   "description": "Reference reader and validator of the .kpin list format: read and check .kpin files without Koona Pin",
   "license": "CC0-1.0",
@@ -36,6 +36,9 @@
     "schema-1.json",
     "LICENSE.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18"
   },
