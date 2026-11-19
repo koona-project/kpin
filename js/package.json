@@ -41,7 +41,8 @@
   },
   "sideEffects": false,
   "scripts": {
-    "test": "node --test test/conformance.test.js test/cli.test.js test/pack.test.js && tsc -p test",
+    "test": "node --test test/conformance.test.js test/cli.test.js && tsc -p test",
+    "test:pack": "node --test test/pack.test.js",
     "prepack": "node tools/pack-files.mjs copy",
     "postpack": "node tools/pack-files.mjs remove"
   },

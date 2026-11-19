@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "check": "node tools/check.mjs",
-    "test": "npm test -w kpin"
+    "test": "npm test -w kpin",
+    "test:pack": "npm run test:pack -w kpin"
   },
   "devDependencies": {
     "ajv": "8.20.0",

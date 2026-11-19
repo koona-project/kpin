@@ -22,6 +22,8 @@ jobs:
       - run: npm run check
       # The reference reader in js/ against the whole suite, its CLI and its types.
       - run: npm test
+      # The package as npm would publish it: packed, unpacked and its --schema run, once per workflow.
+      - run: npm run test:pack
 
   reader-node-18:
     name: Reader on Node 18

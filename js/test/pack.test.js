@@ -17,7 +17,13 @@ test("the packed package carries the root's schema and licence, and its --schema
   mkdirSync(join(root, "node_modules"), { recursive: true });
   const dir = mkdtempSync(join(root, "node_modules", ".kpin-pack-"));
   try {
-    const pack = spawnSync("npm", ["pack", "--json", "--pack-destination", dir], { cwd: js, encoding: "utf8", shell: true });
+    // Through npm's own script when npm runs the test (no shell, so a path with spaces stays one
+    // argument); otherwise one command line for the shell, the path quoted.
+    const npm = process.env.npm_execpath;
+    const options = { cwd: js, encoding: "utf8" };
+    const pack = npm?.endsWith(".js")
+      ? spawnSync(process.execPath, [npm, "pack", "--json", "--pack-destination", dir], options)
+      : spawnSync(`npm pack --json --pack-destination "${dir}"`, { ...options, shell: true });
     assert.equal(pack.status, 0, pack.stderr);
     const [{ filename }] = JSON.parse(pack.stdout.slice(pack.stdout.indexOf("[")));
     const untar = spawnSync("tar", ["-xzf", filename], { cwd: dir, encoding: "utf8" });

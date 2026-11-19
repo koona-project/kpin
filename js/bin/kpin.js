@@ -29,6 +29,7 @@ function fail(message) {
  * reports, which is 0 for a pipe, `/dev/stdin` or a process substitution.
  */
 function bytesOf(path) {
+  if (path === "-" && process.stdin.isTTY) process.stderr.write("kpin: reading a .kpin list from stdin (end it with Ctrl-D, or Ctrl-Z then Enter on Windows)\n");
   const fd = path === "-" ? 0 : openSync(path, "r");
   try {
     // One buffer to read into, and a copy of exactly what each read gave, so a pipe that hands
@@ -68,8 +69,11 @@ async function schemaChecker() {
   addFormats(ajv);
   // In a checkout of the repository, its own schema: a copy left in js/ by a pack that stopped
   // halfway is never read. Installed, the package's copy, which tools/pack-files.mjs writes.
-  const checkout = existsSync(new URL("../../conformance/cases.json", import.meta.url));
-  const schema = new URL(checkout ? "../../schema-1.json" : "../schema-1.json", import.meta.url);
+  // A checkout has both the suite and the schema beside js/; an install's parent folder
+  // (node_modules) has neither, whatever other packages it holds.
+  const rootSchema = new URL("../../schema-1.json", import.meta.url);
+  const checkout = existsSync(rootSchema) && existsSync(new URL("../../conformance/cases.json", import.meta.url));
+  const schema = checkout ? rootSchema : new URL("../schema-1.json", import.meta.url);
   const validate = ajv.compile(JSON.parse(readFileSync(schema, "utf8")));
   return (bytes) => {
     let doc;
@@ -94,15 +98,19 @@ const WHY = {
   unknown_field: "a field this reader does not know",
 };
 
+/** How a file is named in the text output: stdin as (stdin), not as the argument `-`. */
+const label = (path) => (path === "-" ? "(stdin)" : path);
+
 function human(file) {
   const out = [];
   const { result: r } = file;
-  if (file.error) out.push(`${file.path}: cannot read: ${file.error}`);
-  else if (r.answer !== "ready") out.push(`${file.path}: ${r.answer}${r.app ? ` (${r.app})` : ""}: ${r.why}`);
+  const name = label(file.path);
+  if (file.error) out.push(`${name}: cannot read: ${file.error}`);
+  else if (r.answer !== "ready") out.push(`${name}: ${r.answer}${r.app ? ` (${r.app})` : ""}: ${r.why}`);
   else {
     const { list } = r;
     const c = list.counts;
-    out.push(`${file.path}: ready: "${list.title}", version ${list.version}${list.newer ? " (newer than 1.0)" : ""}`);
+    out.push(`${name}: ready: "${list.title}", version ${list.version}${list.newer ? " (newer than 1.0)" : ""}`);
     out.push(`  ${plural(c.links, "link")}, ${plural(c.feeds, "feed")}, ${plural(list.sections, "section")}`);
     const skipped = [
       c.repeated && `${c.repeated} repeated`,
@@ -150,7 +158,7 @@ async function main(argv) {
   });
 
   if (flags.has("--json")) {
-    const shown = files.map(({ path, error, result, schema, ok }) => ({ path, ok, ...(error ? { error } : result), ...(schema ? { schema } : {}) }));
+    const shown = files.map(({ path, error, result, schema, ok }) => ({ path, ...(path === "-" ? { stdin: true } : {}), ok, ...(error ? { error } : result), ...(schema ? { schema } : {}) }));
     process.stdout.write(`${JSON.stringify({ revision: REVISION, files: shown }, null, 2)}\n`);
   } else {
     for (const file of files) if (!flags.has("--quiet") || !file.ok) process.stdout.write(`${human(file)}\n`);

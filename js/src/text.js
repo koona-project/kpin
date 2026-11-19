@@ -228,11 +228,7 @@ export function description(raw, max = DESCRIPTION_LEN) {
   const chars = Array.from(raw.replaceAll("\r\n", "\n"));
   const seen = chars.some(isInvisible) ? seenMarks(chars).filter(([, s]) => s).map(([c]) => c) : chars;
   const kept = seen.filter((c) => c === "\n" || !isControl(c));
-  let start = 0;
-  let end = kept.length;
-  while (start < end && isWhiteSpace(kept[start])) start++;
-  while (end > start && isWhiteSpace(kept[end - 1])) end--;
-  const trimmed = kept.slice(start, end);
+  const trimmed = trimChars(kept);
   return capped(trimmed.join(""), max, trimmed);
 }
 
@@ -248,4 +244,13 @@ export function tag(raw) {
 /** Trims Unicode White_Space off both ends (not U+FEFF, which `String.prototype.trim` takes too). */
 export function trimWhiteSpace(text) {
   return text.replace(LEADING, "").replace(TRAILING, "");
+}
+
+/** {@link trimWhiteSpace} of text already split into code points: the same rule, on the array. */
+function trimChars(chars) {
+  let start = 0;
+  let end = chars.length;
+  while (start < end && isWhiteSpace(chars[start])) start++;
+  while (end > start && isWhiteSpace(chars[end - 1])) end--;
+  return chars.slice(start, end);
 }

@@ -66,7 +66,11 @@ test("- reads stdin to its end, a pipe included", () => {
   const stdin = (input) => spawnSync(process.execPath, [bin, "validate", "--json", "-"], { input });
   const valid = stdin(readFileSync(list("valid.kpin")));
   assert.equal(valid.status, 0);
-  assert.equal(JSON.parse(valid.stdout).files[0].list.counts.links, 3);
+  const [file] = JSON.parse(valid.stdout).files;
+  assert.deepEqual([file.path, file.stdin, file.list.counts.links], ["-", true, 3]);
+  // The text output names it (stdin), not -.
+  const text = spawnSync(process.execPath, [bin, "validate", "-"], { input: "{}", encoding: "utf8" });
+  assert.match(text.stdout, /^\(stdin\): not_a_list/);
   // Past 2 MB through a pipe is too big, not cut.
   const big = stdin(Buffer.concat([readFileSync(list("valid.kpin")), Buffer.alloc(2 * 1024 * 1024, " ")]));
   assert.equal(JSON.parse(big.stdout).files[0].answer, "too_big");
