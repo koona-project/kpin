@@ -50,23 +50,35 @@ const textOf = (object, key, max) => {
 
 const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 
-/** Whether every string of a parsed JSON value, keys included, is Unicode text. */
-function wellFormed(value) {
-  const stack = [value];
+/** Arrays and objects nest at most this deep, the file's own object being the first level. */
+export const MAX_DEPTH = 127;
+
+/**
+ * Why a parsed JSON value is not one the format allows, or `undefined` when it is: a string (keys
+ * included) that is no Unicode text, a number out of a double's range (`JSON.parse` gives it as
+ * an infinity), or arrays and objects nested more than {@link MAX_DEPTH} levels deep.
+ */
+function outOfBounds(value) {
+  const stack = [[value, 1]];
   while (stack.length > 0) {
-    const v = stack.pop();
+    const [v, depth] = stack.pop();
     if (typeof v === "string") {
-      if (LONE_SURROGATE.test(v)) return false;
-    } else if (Array.isArray(v)) {
-      stack.push(...v);
+      if (LONE_SURROGATE.test(v)) return "a string holds an escaped surrogate without its pair";
+    } else if (typeof v === "number") {
+      if (!Number.isFinite(v)) return "a number is out of the range of a double";
     } else if (v !== null && typeof v === "object") {
-      for (const key of Object.keys(v)) {
-        if (LONE_SURROGATE.test(key)) return false;
-        stack.push(v[key]);
+      if (depth > MAX_DEPTH) return `arrays and objects nest more than ${MAX_DEPTH} levels deep`;
+      if (Array.isArray(v)) {
+        for (const item of v) stack.push([item, depth + 1]);
+      } else {
+        for (const key of Object.keys(v)) {
+          if (LONE_SURROGATE.test(key)) return "a key holds an escaped surrogate without its pair";
+          stack.push([v[key], depth + 1]);
+        }
       }
     }
   }
-  return true;
+  return undefined;
 }
 
 /** `[a-z][a-z0-9-]{0,31}`: `app` and `kind`. */
@@ -155,7 +167,8 @@ function readList(text) {
   } catch {
     refuse("not_a_list", "not JSON");
   }
-  if (!wellFormed(root)) refuse("not_a_list", "a string holds an escaped surrogate without its pair");
+  const out = outOfBounds(root);
+  if (out !== undefined) refuse("not_a_list", out);
   if (!isObject(root)) refuse("not_a_list", "not a JSON object");
   if (own(root, "format") !== "koona") refuse("not_a_list", 'format is not "koona"');
   const app = string(root, "app");

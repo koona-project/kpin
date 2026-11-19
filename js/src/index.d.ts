@@ -131,6 +131,8 @@ export function repeatKey(raw: string): string | null;
 export function oneClick(link: string): string | null;
 
 export const MAX_BYTES: number;
+/** Arrays and objects nest at most 127 levels deep, the file's object being the first. */
+export const MAX_DEPTH: number;
 export const MAX_ITEMS: number;
 export const MAX_SECTIONS: number;
 export const TAGS_PER_LINK: number;
