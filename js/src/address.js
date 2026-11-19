@@ -11,13 +11,17 @@ export const utf8Length = (text) => encoder.encode(text).length;
 
 const WHITE_SPACE_OR_CONTROL = /[\p{White_Space}\p{Cc}]/u;
 
-function parse(text) {
+/** A WHATWG URL, or `null` for text that does not parse. Shared with the one-click link. */
+export function parse(text) {
   try {
     return new URL(text);
   } catch {
     return null;
   }
 }
+
+/** ASCII letters lowercased, nothing else: `K` becomes `k`, U+212A KELVIN SIGN stays. */
+export const asciiLower = (text) => text.replace(/[A-Z]+/g, (s) => s.toLowerCase());
 
 const isWeb = (url) => url.protocol === "http:" || url.protocol === "https:";
 
@@ -74,8 +78,6 @@ export function webAddress(raw) {
   const taken = linkUrl(raw);
   return "url" in taken ? taken.url : null;
 }
-
-const asciiLower = (text) => text.replace(/[A-Z]+/g, (s) => s.toLowerCase());
 
 /**
  * Whether a feed may be on this host, as a WHATWG parser writes it (`hostname`): not `localhost`,

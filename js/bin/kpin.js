@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // kpin validate <file...>: each file's answer, what was read and what was skipped and why.
-import { readFileSync, openSync, readSync, closeSync, fstatSync } from "node:fs";
+import { readFileSync, existsSync, openSync, readSync, closeSync } from "node:fs";
 import { read, MAX_BYTES, REVISION } from "../src/index.js";
 
-const USAGE = `Usage: kpin validate [--json] [--schema] [--quiet] <file...>
+const USAGE = `Usage: kpin validate [--json] [--schema] [--quiet] <file...>   (- reads stdin)
 
 Reads each .kpin file as a reader of the .kpin list format 1.x does (reader rules of
 revision ${REVISION}) and prints its answer: ready, not_a_list, needs_newer_app,
@@ -23,22 +23,34 @@ function fail(message) {
   process.exit(2);
 }
 
-/** The file's bytes, at most one past the limit: a bigger file is too big whatever it holds. */
+/**
+ * The bytes of a file, or of stdin for `-`, read to the end, at most one past the limit: a bigger
+ * file is too big whatever it holds. Read in chunks rather than by the size the file system
+ * reports, which is 0 for a pipe, `/dev/stdin` or a process substitution.
+ */
 function bytesOf(path) {
-  const fd = openSync(path, "r");
+  const fd = path === "-" ? 0 : openSync(path, "r");
   try {
-    const size = fstatSync(fd).size;
-    const buffer = Buffer.alloc(Math.min(size, MAX_BYTES + 1));
-    let read = 0;
-    while (read < buffer.length) {
-      const n = readSync(fd, buffer, read, buffer.length - read, read);
+    const chunks = [];
+    let total = 0;
+    while (total <= MAX_BYTES) {
+      const chunk = Buffer.alloc(64 * 1024);
+      let n;
+      try {
+        n = readSync(fd, chunk, 0, chunk.length, null);
+      } catch (error) {
+        // A non-blocking stdin with nothing yet: wait a moment and read again.
+        if (error.code !== "EAGAIN") throw error;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+        continue;
+      }
       if (n === 0) break;
-      read += n;
+      chunks.push(chunk.subarray(0, n));
+      total += n;
     }
-    // A file still growing past the limit is too big too.
-    return size > MAX_BYTES ? new Uint8Array(MAX_BYTES + 1) : buffer.subarray(0, read);
+    return total > MAX_BYTES ? new Uint8Array(MAX_BYTES + 1) : Buffer.concat(chunks, total);
   } finally {
-    closeSync(fd);
+    if (fd !== 0) closeSync(fd);
   }
 }
 
@@ -52,7 +64,10 @@ async function schemaChecker() {
   }
   const ajv = new Ajv({ allErrors: true });
   addFormats(ajv);
-  const validate = ajv.compile(JSON.parse(readFileSync(new URL("../schema-1.json", import.meta.url), "utf8")));
+  // The package's copy (written by prepack), or the repository's when run from a checkout.
+  const packaged = new URL("../schema-1.json", import.meta.url);
+  const schema = existsSync(packaged) ? packaged : new URL("../../schema-1.json", import.meta.url);
+  const validate = ajv.compile(JSON.parse(readFileSync(schema, "utf8")));
   return (bytes) => {
     let doc;
     try {

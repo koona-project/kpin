@@ -18,7 +18,6 @@ export const READER_MINOR = 0;
 
 const AUTHOR_LEN = 120;
 const SECTION_LEN = 120;
-const ID_LEN = 64;
 
 const ENVELOPE_KEYS = new Set(["$schema", "format", "app", "kind", "version", "generator", "id", "title", "description", "author", "license", "language", "updated", "homepage", "sections", "items"]);
 const AUTHOR_KEYS = new Set(["name", "url"]);
@@ -59,9 +58,12 @@ export const MAX_DEPTH = 127;
  * an infinity), or arrays and objects nested more than {@link MAX_DEPTH} levels deep.
  */
 function outOfBounds(value) {
-  const stack = [[value, 1]];
-  while (stack.length > 0) {
-    const [v, depth] = stack.pop();
+  // Two stacks side by side, a value and its depth, rather than a pair allocated for each value.
+  const values = [value];
+  const depths = [1];
+  while (values.length > 0) {
+    const v = values.pop();
+    const depth = depths.pop();
     if (typeof v === "string") {
       if (LONE_SURROGATE.test(v)) return "a string holds an escaped surrogate without its pair";
     } else if (typeof v === "number") {
@@ -69,11 +71,15 @@ function outOfBounds(value) {
     } else if (v !== null && typeof v === "object") {
       if (depth > MAX_DEPTH) return `arrays and objects nest more than ${MAX_DEPTH} levels deep`;
       if (Array.isArray(v)) {
-        for (const item of v) stack.push([item, depth + 1]);
+        for (const item of v) {
+          values.push(item);
+          depths.push(depth + 1);
+        }
       } else {
         for (const key of Object.keys(v)) {
           if (LONE_SURROGATE.test(key)) return "a key holds an escaped surrogate without its pair";
-          stack.push([v[key], depth + 1]);
+          values.push(v[key]);
+          depths.push(depth + 1);
         }
       }
     }
@@ -99,8 +105,8 @@ function version(raw) {
   return [READER_MAJOR, Number(minor)];
 }
 
-/** `[a-z0-9][a-z0-9-]{0,63}`, the list's slug. */
-const slug = (raw) => (/^[a-z0-9][a-z0-9-]{0,63}$/.test(raw) && raw.length <= ID_LEN ? raw : null);
+/** `[a-z0-9][a-z0-9-]{0,63}`, the list's slug: at most 64 characters by its pattern. */
+const slug = (raw) => (/^[a-z0-9][a-z0-9-]{0,63}$/.test(raw) ? raw : null);
 
 /** A BCP 47 tag, loosely: 2–3 letters, then `-` parts of 2–8 letters or digits. */
 function language(raw) {

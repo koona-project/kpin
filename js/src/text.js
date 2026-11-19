@@ -140,8 +140,12 @@ function seenMarks(chars) {
  * @param {string} raw
  */
 export function withoutInvisible(raw) {
-  const chars = Array.from(raw);
-  if (!chars.some(isInvisible)) return raw;
+  return seenOnly(Array.from(raw), raw);
+}
+
+/** {@link withoutInvisible} of text already split into code points; `raw` is that text, if known. */
+function seenOnly(chars, raw = undefined) {
+  if (!chars.some(isInvisible)) return raw ?? chars.join("");
   return seenMarks(chars)
     .filter(([, seen]) => seen)
     .map(([c]) => c)
@@ -168,9 +172,8 @@ function isALine(chars) {
  * At most `max` characters, the end trimmed; empty is none. A cut through a flag leaves its tags
  * without their end, and a cut right after a joiner leaves it with nothing after it: they go too.
  */
-function capped(text, max) {
-  const chars = Array.from(text);
-  let cut = chars.length > max ? withoutInvisible(chars.slice(0, max).join("")) : text;
+function capped(text, max, chars = Array.from(text)) {
+  let cut = chars.length > max ? seenOnly(chars.slice(0, max)) : text;
   cut = cut.replace(TRAILING, "");
   return cut === "" ? null : cut;
 }
@@ -185,7 +188,7 @@ function capped(text, max) {
  */
 export function line(raw, max) {
   const chars = Array.from(raw);
-  if (isALine(chars)) return capped(raw, max);
+  if (isALine(chars)) return capped(raw, max, chars);
   const marks = seenMarks(chars).map(([c, seen]) => [c, seen ? "kept" : "dropped"]);
   // Between two words one character of the white space stays: the first plain space, or else the
   // first of them, as a plain space.
@@ -209,11 +212,8 @@ export function line(raw, max) {
       wordBefore = true;
     }
   }
-  const kept = marks
-    .filter(([, mark]) => mark !== "dropped")
-    .map(([c, mark]) => (mark === "space" ? " " : c))
-    .join("");
-  return capped(kept, max);
+  const kept = marks.filter(([, mark]) => mark !== "dropped").map(([c, mark]) => (mark === "space" ? " " : c));
+  return capped(kept.join(""), max, kept);
 }
 
 /**

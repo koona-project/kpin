@@ -62,12 +62,12 @@ test("a usage error exits 2", () => {
   assert.equal(kpin("--help").status, 0);
 });
 
-test("the package's schema-1.json is the repository's", () => {
-  const read = (path) => readFileSync(new URL(path, import.meta.url));
-  assert.ok(read("../schema-1.json").equals(read("../../schema-1.json")), "copy ../schema-1.json to js/schema-1.json");
-});
-
-test("the package's LICENSE.md is the repository's", () => {
-  const read = (path) => readFileSync(new URL(path, import.meta.url));
-  assert.ok(read("../LICENSE.md").equals(read("../../LICENSE.md")), "copy ../LICENSE.md to js/LICENSE.md");
+test("- reads stdin to its end, a pipe included", () => {
+  const stdin = (input) => spawnSync(process.execPath, [bin, "validate", "--json", "-"], { input });
+  const valid = stdin(readFileSync(list("valid.kpin")));
+  assert.equal(valid.status, 0);
+  assert.equal(JSON.parse(valid.stdout).files[0].list.counts.links, 3);
+  // Past 2 MB through a pipe is too big, not cut.
+  const big = stdin(Buffer.concat([readFileSync(list("valid.kpin")), Buffer.alloc(2 * 1024 * 1024, " ")]));
+  assert.equal(JSON.parse(big.stdout).files[0].answer, "too_big");
 });

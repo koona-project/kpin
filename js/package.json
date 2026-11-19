@@ -10,7 +10,14 @@
     "directory": "js"
   },
   "homepage": "https://github.com/koona-project/kpin/tree/main/js#readme",
-  "keywords": ["kpin", "koona", "list", "bookmarks", "feeds", "validator"],
+  "keywords": [
+    "kpin",
+    "koona",
+    "list",
+    "bookmarks",
+    "feeds",
+    "validator"
+  ],
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
@@ -23,21 +30,32 @@
   "bin": {
     "kpin": "bin/kpin.js"
   },
-  "files": ["src", "bin", "schema-1.json", "LICENSE.md"],
+  "files": [
+    "src",
+    "bin",
+    "schema-1.json",
+    "LICENSE.md"
+  ],
   "engines": {
     "node": ">=18"
   },
   "sideEffects": false,
   "scripts": {
-    "test": "node --test test/conformance.test.js test/cli.test.js && tsc -p test"
+    "test": "node --test test/conformance.test.js test/cli.test.js && tsc -p test",
+    "prepack": "node -e \"for (const f of ['schema-1.json', 'LICENSE.md']) require('fs').copyFileSync('../' + f, f)\"",
+    "postpack": "node -e \"for (const f of ['schema-1.json', 'LICENSE.md']) require('fs').rmSync(f, { force: true })\""
   },
   "peerDependencies": {
     "ajv": "^8.12.0",
     "ajv-formats": "^3.0.0"
   },
   "peerDependenciesMeta": {
-    "ajv": { "optional": true },
-    "ajv-formats": { "optional": true }
+    "ajv": {
+      "optional": true
+    },
+    "ajv-formats": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "ajv": "8.20.0",

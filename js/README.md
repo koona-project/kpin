@@ -4,7 +4,7 @@ The reference reader and validator of the [`.kpin` list format](https://github.c
 
 - ESM with TypeScript types, no runtime dependencies.
 - Runs in Node 18 and later, and in browsers.
-- Dedicated to the public domain under CC0 1.0, like the spec ([LICENSE.md](LICENSE.md), a copy of the repository's).
+- Dedicated to the public domain under CC0 1.0, like the spec ([LICENSE.md](https://github.com/koona-project/kpin/blob/main/LICENSE.md)).
 
 ## Read a list
 

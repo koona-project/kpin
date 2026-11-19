@@ -1,19 +1,9 @@
 // The one-click link of the spec: `koonapin://import?url=…`.
 import { trimWhiteSpace } from "./text.js";
-import { utf8Length } from "./address.js";
+import { utf8Length, parse, asciiLower } from "./address.js";
 
 /** The whole link, trimmed, is at most 4,096 bytes in UTF-8. */
 export const LINK_BYTES = 4096;
-
-function parse(text) {
-  try {
-    return new URL(text);
-  } catch {
-    return null;
-  }
-}
-
-const asciiLower = (text) => text.replace(/[A-Z]+/g, (s) => s.toLowerCase());
 
 /**
  * The list's address a `koonapin://import?url=…` link offers to download, in its parsed form, or
