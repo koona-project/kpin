@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,10 +22,12 @@ test("the packed package carries the root's schema and licence, and its --schema
     const npm = process.env.npm_execpath;
     const options = { cwd: js, encoding: "utf8" };
     const pack = npm?.endsWith(".js")
-      ? spawnSync(process.execPath, [npm, "pack", "--json", "--pack-destination", dir], options)
-      : spawnSync(`npm pack --json --pack-destination "${dir}"`, { ...options, shell: true });
+      ? spawnSync(process.execPath, [npm, "pack", "--pack-destination", dir], options)
+      : spawnSync(`npm pack --pack-destination "${dir}"`, { ...options, shell: true });
     assert.equal(pack.status, 0, pack.stderr);
-    const [{ filename }] = JSON.parse(pack.stdout.slice(pack.stdout.indexOf("[")));
+    // The tarball is the one file npm wrote to the empty folder, whatever else it printed.
+    const [filename, ...others] = readdirSync(dir).filter((name) => name.endsWith(".tgz"));
+    assert.ok(filename && others.length === 0, `one tarball in ${dir}`);
     const untar = spawnSync("tar", ["-xzf", filename], { cwd: dir, encoding: "utf8" });
     assert.equal(untar.status, 0, untar.stderr);
     const unpacked = join(dir, "package");

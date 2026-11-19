@@ -51,6 +51,7 @@ other.kpin: not_a_list: title is missing, not a string or empty once cleaned
 - `--json` prints one JSON document, `{ "revision", "files": [{ "path", "ok", "answer", "list" | "why", ... }] }`.
 - `--schema` also checks each file against [schema-1.json](https://github.com/koona-project/kpin/blob/main/schema-1.json), the schema a writer must satisfy. It needs `ajv` and `ajv-formats` beside `kpin` (`npm install kpin ajv@8 ajv-formats@3`). They are optional peer dependencies, so the reader itself installs nothing.
 - `--quiet` prints only the files that fail.
+- `-` in place of a file reads stdin to its end, once per run: `curl -s https://example.org/list.kpin | npx kpin validate -`.
 
 The exit status is 0 when every file is a ready list (and, with `--schema`, valid to the schema), 1 when any isn't, and 2 for a usage error.
 
@@ -60,4 +61,4 @@ The reader uses the JavaScript engine's Unicode data (`\p{Script=…}`, `\p{Exte
 
 ## Tests
 
-From the repository's root: `npm ci && npm test` runs the conformance suite, the CLI tests and the type check.
+From the repository's root: `npm ci && npm test` runs the conformance suite, the reader's own tests, the CLI tests and the type check. `npm run test:pack` packs the package as npm would publish it, unpacks it outside the checkout and runs its `--schema`: run it after changing what the package ships. CI runs both, on the runner's Node and on Node 18.

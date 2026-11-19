@@ -47,41 +47,60 @@ const textOf = (object, key, max) => {
   return value === undefined ? null : line(value, max);
 };
 
-const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+/** Whether a text holds a surrogate without its pair. A loop, not a regex with a lookbehind, which Safari before 16.4 cannot parse. */
+function hasLoneSurrogate(text) {
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c >= 0xd800 && c <= 0xdbff) {
+      const next = text.charCodeAt(i + 1);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return true;
+      i++;
+    } else if (c >= 0xdc00 && c <= 0xdfff) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /** Arrays and objects nest at most this deep, the file's own object being the first level. */
 export const MAX_DEPTH = 127;
 
+const isNumberChar = (c) => (c >= 0x30 && c <= 0x39) || c === 0x2d || c === 0x2b || c === 0x2e || c === 0x65 || c === 0x45;
+
 /**
- * Why a parsed JSON value is not one the format allows, or `undefined` when it is: a string (keys
- * included) that is no Unicode text, a number out of a double's range (`JSON.parse` gives it as
- * an infinity), or arrays and objects nested more than {@link MAX_DEPTH} levels deep.
+ * Why a JSON text (one `JSON.parse` has accepted) is not one the format allows, or `undefined`
+ * when it is: a string (keys included) that is no Unicode text, a number out of a double's range,
+ * or arrays and objects nested more than {@link MAX_DEPTH} levels deep. The text is scanned rather
+ * than the parsed value, so a value a repeated key replaced is judged too: it still stands in the
+ * file, and a reader that parses every value (as Koona Pin's does) refuses it.
  */
-function outOfBounds(value) {
-  // Two stacks side by side, a value and its depth, rather than a pair allocated for each value.
-  const values = [value];
-  const depths = [1];
-  while (values.length > 0) {
-    const v = values.pop();
-    const depth = depths.pop();
-    if (typeof v === "string") {
-      if (LONE_SURROGATE.test(v)) return "a string holds an escaped surrogate without its pair";
-    } else if (typeof v === "number") {
-      if (!Number.isFinite(v)) return "a number is out of the range of a double";
-    } else if (v !== null && typeof v === "object") {
-      if (depth > MAX_DEPTH) return `arrays and objects nest more than ${MAX_DEPTH} levels deep`;
-      if (Array.isArray(v)) {
-        for (const item of v) {
-          values.push(item);
-          depths.push(depth + 1);
+function outOfBounds(text) {
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 0x22) {
+      // A string, to its closing quote; escapes are decoded only when it has any.
+      let end = i + 1;
+      let escaped = false;
+      for (let k = text.charCodeAt(end); k !== 0x22; k = text.charCodeAt(end)) {
+        if (k === 0x5c) {
+          escaped = true;
+          end++;
         }
-      } else {
-        for (const key of Object.keys(v)) {
-          if (LONE_SURROGATE.test(key)) return "a key holds an escaped surrogate without its pair";
-          values.push(v[key]);
-          depths.push(depth + 1);
-        }
+        end++;
       }
+      const raw = text.slice(i, end + 1);
+      if (hasLoneSurrogate(escaped ? JSON.parse(raw) : raw)) return "a string holds a surrogate without its pair";
+      i = end;
+    } else if (c === 0x5b || c === 0x7b) {
+      if (++depth > MAX_DEPTH) return `arrays and objects nest more than ${MAX_DEPTH} levels deep`;
+    } else if (c === 0x5d || c === 0x7d) {
+      depth--;
+    } else if (c === 0x2d || (c >= 0x30 && c <= 0x39)) {
+      let end = i;
+      while (end < text.length && isNumberChar(text.charCodeAt(end))) end++;
+      if (!Number.isFinite(Number(text.slice(i, end)))) return "a number is out of the range of a double";
+      i = end - 1;
     }
   }
   return undefined;
@@ -136,11 +155,14 @@ function textOfInput(input) {
     return input;
   }
   let bytes;
+  const tag = Object.prototype.toString.call(input);
   if (input instanceof Uint8Array) bytes = input;
-  else if (input instanceof ArrayBuffer) bytes = new Uint8Array(input);
+  else if (tag === "[object ArrayBuffer]" || tag === "[object SharedArrayBuffer]") bytes = new Uint8Array(input);
   else if (ArrayBuffer.isView(input)) bytes = new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
-  else throw new TypeError("read() takes a string, a Uint8Array or an ArrayBuffer");
+  else throw new TypeError("read() takes a string, a Uint8Array, an ArrayBuffer or a SharedArrayBuffer");
   if (bytes.length > MAX_BYTES) refuse("too_big", `${bytes.length} bytes, more than ${MAX_BYTES}`);
+  // TextDecoder refuses shared memory in browsers: decode a copy, which slice() makes unshared.
+  if (Object.prototype.toString.call(bytes.buffer) === "[object SharedArrayBuffer]") bytes = bytes.slice();
   try {
     return decoder.decode(bytes);
   } catch {
@@ -151,7 +173,7 @@ function textOfInput(input) {
 /**
  * Reads a `.kpin` file: its text, or its bytes as they came (a file, a download). Every file gets
  * one answer, and a list that is `ready` comes with what was read out of it.
- * @param {string | Uint8Array | ArrayBuffer | ArrayBufferView} input
+ * @param {string | Uint8Array | ArrayBuffer | SharedArrayBuffer | ArrayBufferView} input
  * @returns {import("./index.js").Answer}
  */
 export function read(input) {
@@ -173,7 +195,7 @@ function readList(text) {
   } catch {
     refuse("not_a_list", "not JSON");
   }
-  const out = outOfBounds(root);
+  const out = outOfBounds(text);
   if (out !== undefined) refuse("not_a_list", out);
   if (!isObject(root)) refuse("not_a_list", "not a JSON object");
   if (own(root, "format") !== "koona") refuse("not_a_list", 'format is not "koona"');

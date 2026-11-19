@@ -99,7 +99,7 @@ export interface Skip {
 }
 
 /** Reads a `.kpin` file: its text, or its bytes as they came (bytes that are not UTF-8 are not a list). */
-export function read(input: string | Uint8Array | ArrayBuffer | ArrayBufferView): Answer;
+export function read(input: string | Uint8Array | ArrayBuffer | SharedArrayBuffer | ArrayBufferView): Answer;
 
 /** A one-line field (titles, names, `author.name`, `license`, `generator`) cleaned and cut to `max` characters; `null` when nothing is left. */
 export function line(raw: string, max: number): string | null;
