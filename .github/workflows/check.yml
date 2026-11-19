@@ -1,6 +1,7 @@
 name: Check
 
 # The suite against itself and the schema, on every pull request and push to main (tools/check.mjs),
+# the reference reader of js/ against the suite (npm test), on the runner's Node and on Node 18,
 # and, on a pull request, a sign-off on every commit (CONTRIBUTING.md).
 on:
   pull_request:
@@ -19,6 +20,24 @@ jobs:
       - uses: actions/checkout@v7
       - run: npm ci
       - run: npm run check
+      # The reference reader in js/ against the whole suite, its CLI and its types.
+      - run: npm test
+      # The package as npm would publish it: packed, unpacked and its --schema run, once per workflow.
+      - run: npm run test:pack
+
+  reader-node-18:
+    name: Reader on Node 18
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      # The oldest Node the package kpin supports.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 18
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:pack
 
   sign-off:
     name: Signed off

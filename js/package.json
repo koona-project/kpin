@@ -1,0 +1,66 @@
+{
+  "name": "kpin",
+  "version": "0.1.0",
+  "description": "Reference reader and validator of the .kpin list format: read and check .kpin files without Koona Pin",
+  "license": "CC0-1.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koona-project/kpin.git",
+    "directory": "js"
+  },
+  "homepage": "https://github.com/koona-project/kpin/tree/main/js#readme",
+  "keywords": [
+    "kpin",
+    "koona",
+    "list",
+    "bookmarks",
+    "feeds",
+    "validator"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./schema-1.json": "./schema-1.json",
+    "./package.json": "./package.json"
+  },
+  "types": "./src/index.d.ts",
+  "bin": {
+    "kpin": "bin/kpin.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "schema-1.json",
+    "LICENSE.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "test": "node --test test/conformance.test.js test/read.test.js test/cli.test.js && tsc -p test",
+    "test:pack": "node --test test/pack.test.js",
+    "prepack": "node tools/pack-files.mjs copy",
+    "postpack": "node tools/pack-files.mjs remove"
+  },
+  "peerDependencies": {
+    "ajv": "^8.12.0",
+    "ajv-formats": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ajv": {
+      "optional": true
+    },
+    "ajv-formats": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "typescript": "7.0.2"
+  }
+}
