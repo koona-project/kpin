@@ -25,7 +25,12 @@ The package takes `schema-1.json` and `LICENSE.md` from the root when it is pack
 
 ## Releases
 
-A release is a tag: `rYYYY-MM` for a new revision of the reader rules, then `rYYYY-MM.1`, `rYYYY-MM.2` for later fixes of the same revision (wording, a missing case) that change no rule. A tag is never moved or deleted: a tool that pins one, as Koona Pin does by tag and commit, must get the same files from it every time.
+There are two kinds of release, each a tag, and they are numbered apart.
+
+- **The spec and the suite**: `rYYYY-MM` for a new revision of the reader rules, then `rYYYY-MM.1`, `rYYYY-MM.2` for later fixes of the same revision (wording, a missing case) that change no rule. These name the reader rules, not software: the format's own version (`1.0`) is written in every file.
+- **The package `@koona/kpin`** (`js/`): `js-vX.Y.Z`, its version on npm, by semantic versioning. It is tagged on the commit it was published from, after `npm publish` from `js/` succeeds. A new revision of the reader rules is a new MINOR of the package at least. The package's `REVISION` says which revision it follows.
+
+A tag is never moved or deleted: a tool that pins one, as Koona Pin does by tag and commit, must get the same files from it every time. A version on npm is never republished either.
 
 ## Koona Pin
 
