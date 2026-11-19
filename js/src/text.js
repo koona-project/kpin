@@ -224,10 +224,16 @@ export function line(raw, max) {
  * @returns {string | null}
  */
 export function description(raw, max = DESCRIPTION_LEN) {
-  const kept = Array.from(withoutInvisible(raw.replaceAll("\r\n", "\n")))
-    .filter((c) => c === "\n" || !isControl(c))
-    .join("");
-  return capped(kept.replace(LEADING, "").replace(TRAILING, ""), max);
+  // Split into code points once: cleaned, controls dropped and the ends trimmed on the array.
+  const chars = Array.from(raw.replaceAll("\r\n", "\n"));
+  const seen = chars.some(isInvisible) ? seenMarks(chars).filter(([, s]) => s).map(([c]) => c) : chars;
+  const kept = seen.filter((c) => c === "\n" || !isControl(c));
+  let start = 0;
+  let end = kept.length;
+  while (start < end && isWhiteSpace(kept[start])) start++;
+  while (end > start && isWhiteSpace(kept[end - 1])) end--;
+  const trimmed = kept.slice(start, end);
+  return capped(trimmed.join(""), max, trimmed);
 }
 
 /**

@@ -41,9 +41,9 @@
   },
   "sideEffects": false,
   "scripts": {
-    "test": "node --test test/conformance.test.js test/cli.test.js && tsc -p test",
-    "prepack": "node -e \"for (const f of ['schema-1.json', 'LICENSE.md']) require('fs').copyFileSync('../' + f, f)\"",
-    "postpack": "node -e \"for (const f of ['schema-1.json', 'LICENSE.md']) require('fs').rmSync(f, { force: true })\""
+    "test": "node --test test/conformance.test.js test/cli.test.js test/pack.test.js && tsc -p test",
+    "prepack": "node tools/pack-files.mjs copy",
+    "postpack": "node tools/pack-files.mjs remove"
   },
   "peerDependencies": {
     "ajv": "^8.12.0",

@@ -21,7 +21,7 @@ A pull request whose commits lack the line fails the check "Signed off".
 
 `npm ci && npm run check` checks the suite against itself and the schema, and `npm test` runs the reference reader in `js/` (the package `kpin`) against the whole suite, as CI does on every pull request. Koona Pin runs the suite in its own tests too, and so can any other reader.
 
-The package takes `schema-1.json` and `LICENSE.md` from the root when it is packed (`prepack`), so there is one copy of each in the repository.
+The package takes `schema-1.json` and `LICENSE.md` from the root when it is packed (`js/tools/pack-files.mjs`, run by `prepack` and `postpack`), so there is one copy of each in the repository; `npm test` packs the package and checks the copies.
 
 ## Releases
 

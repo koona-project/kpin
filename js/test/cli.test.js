@@ -71,3 +71,7 @@ test("- reads stdin to its end, a pipe included", () => {
   const big = stdin(Buffer.concat([readFileSync(list("valid.kpin")), Buffer.alloc(2 * 1024 * 1024, " ")]));
   assert.equal(JSON.parse(big.stdout).files[0].answer, "too_big");
 });
+
+test("- given twice is a usage error: there is one stdin", () => {
+  assert.equal(kpin("validate", "-", "-").status, 2);
+});

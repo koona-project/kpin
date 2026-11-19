@@ -31,10 +31,12 @@ function fail(message) {
 function bytesOf(path) {
   const fd = path === "-" ? 0 : openSync(path, "r");
   try {
+    // One buffer to read into, and a copy of exactly what each read gave, so a pipe that hands
+    // over a few KB at a time holds no more than the file.
+    const chunk = Buffer.allocUnsafe(64 * 1024);
     const chunks = [];
     let total = 0;
     while (total <= MAX_BYTES) {
-      const chunk = Buffer.alloc(64 * 1024);
       let n;
       try {
         n = readSync(fd, chunk, 0, chunk.length, null);
@@ -45,7 +47,7 @@ function bytesOf(path) {
         continue;
       }
       if (n === 0) break;
-      chunks.push(chunk.subarray(0, n));
+      chunks.push(Buffer.from(chunk.subarray(0, n)));
       total += n;
     }
     return total > MAX_BYTES ? new Uint8Array(MAX_BYTES + 1) : Buffer.concat(chunks, total);
@@ -64,9 +66,10 @@ async function schemaChecker() {
   }
   const ajv = new Ajv({ allErrors: true });
   addFormats(ajv);
-  // The package's copy (written by prepack), or the repository's when run from a checkout.
-  const packaged = new URL("../schema-1.json", import.meta.url);
-  const schema = existsSync(packaged) ? packaged : new URL("../../schema-1.json", import.meta.url);
+  // In a checkout of the repository, its own schema: a copy left in js/ by a pack that stopped
+  // halfway is never read. Installed, the package's copy, which tools/pack-files.mjs writes.
+  const checkout = existsSync(new URL("../../conformance/cases.json", import.meta.url));
+  const schema = new URL(checkout ? "../../schema-1.json" : "../schema-1.json", import.meta.url);
   const validate = ajv.compile(JSON.parse(readFileSync(schema, "utf8")));
   return (bytes) => {
     let doc;
@@ -129,6 +132,7 @@ async function main(argv) {
   const paths = rest.filter((a) => !a.startsWith("--"));
   for (const flag of flags) if (!["--json", "--schema", "--quiet"].includes(flag)) fail(`Unknown option: ${flag}`);
   if (paths.length === 0) fail("No file given.");
+  if (paths.filter((p) => p === "-").length > 1) fail("- (stdin) can be given once: there is one stdin to read.");
   const check = flags.has("--schema") ? await schemaChecker() : null;
 
   const files = paths.map((path) => {
